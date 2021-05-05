@@ -51,38 +51,44 @@ aws ec2 authorize-security-group-ingress        \
 
 UBUNTU_20_04_AMI="ami-08962a4068733a2b6"
 
-echo "Creating Ubuntu 20.04 instance..."
-RUN_INSTANCES=$(aws ec2 run-instances   \
-    --image-id $UBUNTU_20_04_AMI        \
-    --instance-type t2.micro            \
-    --key-name $KEY_NAME                \
-    --security-groups $SEC_GRP)
-
-INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
+#echo "Creating Ubuntu 20.04 instance..."
+#RUN_INSTANCES=$(aws ec2 run-instances   \
+#    --image-id $UBUNTU_20_04_AMI        \
+#    --instance-type t2.micro            \
+#    --key-name $KEY_NAME                \
+#    --security-groups $SEC_GRP)
+#
+#INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
 
 echo "Waiting for instance creation..."
-aws ec2 wait instance-running --instance-ids $INSTANCE_ID
+aws ec2 wait instance-running --instance-ids i-0fe4e8140ec753811
 
-PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID |
+PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids i-0fe4e8140ec753811 |
     jq -r '.Reservations[0].Instances[0].PublicIpAddress'
 )
 
 echo "New instance $INSTANCE_ID @ $PUBLIC_IP"
 
-echo "deploying code to production"
-scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=60" app.py ubuntu@$PUBLIC_IP:/home/ubuntu/
-
 echo "setup production environment"
 ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@$PUBLIC_IP <<EOF
-    sudo apt update
-    sudo apt upgrade
-    sudo apt install python3-flask
-    sudo apt install python3-pip
+    sudo apt -f install
+    sudo apt -y update && sudo apt -y dist-upgrade
+    sudo apt install git
+    sudo apt -y install python3-pip
+    sudo apt install build-essential libssl-dev libffi-dev python3-dev
+    sudo apt install -y python3-venv
+    git clone https://github.com/Sam-M-Israel/cloud-computing-parking-lot.git
+    cd cloud-computing-parking-lot
+    pip3 install Flask
     pip3 install boto3 pillow
     # run app
     nohup flask run --host 0.0.0.0  &>/dev/null &
     exit
 EOF
+
+#echo "deploying code to production"
+#scp -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=60" app.py ubuntu@$PUBLIC_IP:/home/ubuntu/
+#
 
 echo "test that it all worked"
 curl  --retry-connrefused --retry 10 --retry-delay 1  http://$PUBLIC_IP:5000
