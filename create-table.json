@@ -1,0 +1,19 @@
+{
+  "TableName": "CloudCompParkingLotTask",
+  "KeySchema": [
+    {
+      "AttributeName": "ticket_id",
+      "KeyType": "HASH"
+    },
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "ticket_id",
+      "AttributeType": "S"
+    },
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  }
+}
