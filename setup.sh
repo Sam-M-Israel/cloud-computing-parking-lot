@@ -79,9 +79,12 @@ ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@
     sudo apt install -y python3-venv
     git clone https://github.com/Sam-M-Israel/cloud-computing-parking-lot.git
     cd cloud-computing-parking-lot
-    pip3 install Flask
-    pip3 install boto3 pillow
-    # run app
+    python3 -m venv cloud-computing-parking-lot
+    source cloud-computing-parking-lot/bin/activate
+    pip3 install -r requirements.txt && pip3 freeze > requirements.txt
+    export FLASK_APP=app.py
+    export FLASK_ENV=development
+    export FLASK_DEBUG=0
     nohup flask run --host 0.0.0.0  &>/dev/null &
     exit
 EOF

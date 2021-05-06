@@ -2,21 +2,17 @@ import boto3
 from botocore.exceptions import ClientError
 
 
-def create_parking_lots_table(dynamodb=None):
-    if not dynamodb:
-        dynamodb = boto3.resource('dynamodb', endpoint_url="http://localhost:8000")
+def create_parking_lots_table(dynamoDB=None, credentials=None):
+    if not dynamoDB:
+        dynamoDB = boto3.client('dynamodb', endpoint_url="http://localhost:8000", aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key)
 
-    table = dynamodb.Table("CloudCompParkingLotTask")
-    try:
-        is_table_existing = table.table_status in ("CREATING", "UPDATING",
-                                                   "DELETING", "ACTIVE")
-    except ClientError:
-        is_table_existing = False
-        return "Table %s doesn't exist." % table.name
+        response = dynamoDB.describe_table(
+            TableName='CloudCompParkingLotTask'
+        )
 
-    if not is_table_existing:
         print("Creating table...")
-        table = dynamodb.create_table(
+        table = dynamoDB.create_table(
             TableName='CloudCompParkingLotTask',
             KeySchema=[
                 {
