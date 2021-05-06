@@ -33,10 +33,6 @@ table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
 
 
 def get_car_by_ticket_id(ticket_id):
-    response = dynamoDB.describe_table(
-        TableName=__TableName__
-    )
-    print(f'Here in get item => {response}')
     res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
     if 'Item' not in res:
         return {"nonexist": "car doesn't exist in db"}
@@ -116,10 +112,10 @@ def vehicle_entry():
     else:
         current_time = round(time.time() * 1000)
         ticket_id = create_new_ticket_id(current_time, plate_number, parking_lot_number)
-        check_exists = get_car_by_ticket_id(ticket_id)
-
-        if not check_exists["nonexist"]:
-            return "Vehicle already exists in garage"
+        # check_exists = get_car_by_ticket_id(ticket_id)
+        #
+        # if not check_exists["nonexist"]:
+        #     return "Vehicle already exists in garage"
 
         new_car = {
             Primary_Column_Name: ticket_id,
@@ -160,10 +156,6 @@ def vehicle_exit():
 
 @app.route("/")
 def home():
-    response = dynamoDB.describe_table(
-        TableName=__TableName__
-    )
-    print(f'Here in hommmmeeeee => {response}')
 
     return "Hello World!"
 

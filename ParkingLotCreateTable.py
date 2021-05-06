@@ -27,6 +27,9 @@ def create_parking_lots_table(dynamoDB=None, table_name='CloudCompParkingLotTask
                 'WriteCapacityUnits': 5
             }
         )
+
+        print("waiting for table [%s] to be created" % table_name)
+        table.meta.client.get_waiter('table_exists').wait(TableName=table_name)
         return table
 
 
