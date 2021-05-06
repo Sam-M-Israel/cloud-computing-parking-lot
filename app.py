@@ -67,11 +67,10 @@ def check_entry_query_params_validity(plate_num, parking_lot_num):
         result["plate_num"] = f'{standard_error}No plate number was given.'
     if len(plate_num) < 11 or len(plate_num) > 11:
         result["plate_num"] = f'{standard_error}Invalid number of characters in the ' \
-                              f'plate number. '
+                           f'plate number. '
     if not parking_lot_num or len(parking_lot_num) == 0:
         err_str = 'No parking lot number was given.'
-        result.parking_lot_num = f'\n {err_str}' if len(
-            result["plate_num"]) > 0 else f'{standard_error}{err_str}'
+        result.parking_lot_num = f'\n {err_str}' if len(result["plate_num"]) > 0 else f'{standard_error}{err_str}'
 
     result["plate_num"] = True if len(result["plate_num"]) == 0 else result["plate_num"]
     result["parking_lot_num"] = True if len(
@@ -147,8 +146,7 @@ def vehicle_exit():
     else:
         if 'Item' in exit_res.keys():
             exiting_vehicle = dict(exit_res['Item'])
-            parked_duration, amount_to_pay = get_payment_amount(
-                exiting_vehicle["entry_time"])
+            parked_duration, amount_to_pay = get_payment_amount(exiting_vehicle["entry_time"])
             exiting_vehicle.update({"total_parked_time": str(parked_duration)})
             exiting_vehicle.update({"charge": float(amount_to_pay)})
         else:
