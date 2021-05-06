@@ -1,6 +1,5 @@
 import datetime
 import simplejson as json
-from botocore.exceptions import ClientError
 from flask import Flask, request, jsonify, abort
 import boto3
 import time
@@ -21,9 +20,13 @@ __TableName__ = "CloudCompParkingLotTask"
 
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
+session = boto3.Session(profile_name='default')
+credentials = session.get_credentials()
+AWS_ACCESS_KEY = credentials.access_key
 
-
-dynamoDB = boto3.resource('dynamodb', endpoint_url='http://localhost:8000')
+dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
+                        aws_access_key_id=credentials.access_key,
+                        aws_secret_access_key=credentials.secret_key)
 ParkingLotCreateTable.create_parking_lots_table(dynamoDB)
 table = dynamoDB.Table(__TableName__)
 
@@ -119,11 +122,8 @@ def vehicle_entry():
             "plate_number": plate_number,
             "entry_time": current_time,
         }
-        res = None
-        try:
-            res = table.put_item(Item=new_car)
-        except ClientError as e:
-            return e.response['Error']['Message']
+        res = table.put_item(Item=new_car)
+
 
         car = get_car_by_ticket_id(ticket_id)
     return json.dumps(car, indent=2, default=decimal_default)
