@@ -82,9 +82,7 @@ ssh -i $KEY_PEM -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=10" ubuntu@
     python3 -m venv cloud-computing-parking-lot
     source cloud-computing-parking-lot/bin/activate
     pip3 install -r requirements.txt && pip3 freeze > requirements.txt
-    export FLASK_APP=app.py
-    export FLASK_ENV=development
-    export FLASK_DEBUG=0
+    export FLASK_APP=app.py && export FLASK_ENV=development && export FLASK_DEBUG=0
     nohup flask run --host 0.0.0.0  &>/dev/null &
     exit
 EOF

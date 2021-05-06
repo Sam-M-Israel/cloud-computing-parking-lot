@@ -1,5 +1,6 @@
 import datetime
 import simplejson as json
+from botocore.exceptions import ClientError
 from flask import Flask, request, jsonify, abort
 import boto3
 import time
@@ -27,11 +28,12 @@ AWS_ACCESS_KEY = credentials.access_key
 dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
                         aws_access_key_id=credentials.access_key,
                         aws_secret_access_key=credentials.secret_key)
-table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, credentials)
+table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
+                                                        credentials)
 
 
 def get_car_by_ticket_id(ticket_id):
-    res = table.get_item(Key={Primary_Column_Name: ticket_id})
+    res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
     if 'Item' not in res:
         return {"nonexist": "car doesn't exist in db"}
 
@@ -65,10 +67,11 @@ def check_entry_query_params_validity(plate_num, parking_lot_num):
         result["plate_num"] = f'{standard_error}No plate number was given.'
     if len(plate_num) < 11 or len(plate_num) > 11:
         result["plate_num"] = f'{standard_error}Invalid number of characters in the ' \
-                           f'plate number. '
+                              f'plate number. '
     if not parking_lot_num or len(parking_lot_num) == 0:
         err_str = 'No parking lot number was given.'
-        result.parking_lot_num = f'\n {err_str}' if len(result["plate_num"]) > 0 else f'{standard_error}{err_str}'
+        result.parking_lot_num = f'\n {err_str}' if len(
+            result["plate_num"]) > 0 else f'{standard_error}{err_str}'
 
     result["plate_num"] = True if len(result["plate_num"]) == 0 else result["plate_num"]
     result["parking_lot_num"] = True if len(
@@ -121,8 +124,7 @@ def vehicle_entry():
             "plate_number": plate_number,
             "entry_time": current_time,
         }
-        res = table.put_item(Item=new_car)
-
+        res = table.put_item(TableName=__TableName__, Item=new_car)
 
         car = get_car_by_ticket_id(ticket_id)
     return json.dumps(car, indent=2, default=decimal_default)
@@ -138,14 +140,15 @@ def vehicle_exit():
 
     exiting_vehicle = None
     try:
-        exit_res = table.get_item(Key={"ticket_id": ticket_id})
-        delete_res = table.delete_item(Key={"ticket_id": ticket_id})
+        exit_res = table.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
+        delete_res = table.delete_item(TableName=__TableName__, Key={"ticket_id":ticket_id})
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
         if 'Item' in exit_res.keys():
             exiting_vehicle = dict(exit_res['Item'])
-            parked_duration, amount_to_pay = get_payment_amount(exiting_vehicle["entry_time"])
+            parked_duration, amount_to_pay = get_payment_amount(
+                exiting_vehicle["entry_time"])
             exiting_vehicle.update({"total_parked_time": str(parked_duration)})
             exiting_vehicle.update({"charge": float(amount_to_pay)})
         else:
