@@ -8,7 +8,6 @@ import decimal
 import math
 from .init_dynamoDB import DynamoDB as dyno
 
-
 app = Flask(__name__)
 dynamoInstance = dyno()
 table = dynamoInstance.create_dyno_table()
@@ -16,6 +15,7 @@ __TableName__ = "CloudCompParkingLotTask"
 
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
+
 
 # session = boto3.Session(profile_name='default')
 # credentials = session.get_credentials()
@@ -33,7 +33,6 @@ def decimal_default(obj):
 
 
 def get_car_by_ticket_id(ticket_id):
-
     res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
     if 'Item' not in res:
         return {"nonexist": "car doesn't exist in db"}
@@ -68,10 +67,11 @@ def check_entry_query_params_validity(plate_num, parking_lot_num):
         result["plate_num"] = f'{standard_error}No plate number was given.'
     if len(plate_num) < 11 or len(plate_num) > 11:
         result["plate_num"] = f'{standard_error}Invalid number of characters in the ' \
-                           f'plate number. '
+                              f'plate number. '
     if not parking_lot_num or len(parking_lot_num) == 0:
         err_str = 'No parking lot number was given.'
-        result.parking_lot_num = f'\n {err_str}' if len(result["plate_num"]) > 0 else f'{standard_error}{err_str}'
+        result.parking_lot_num = f'\n {err_str}' if len(
+            result["plate_num"]) > 0 else f'{standard_error}{err_str}'
 
     result["plate_num"] = True if len(result["plate_num"]) == 0 else result["plate_num"]
     result["parking_lot_num"] = True if len(
@@ -110,7 +110,7 @@ def vehicle_entry():
 
     if validity_check["parking_lot_num"] is not True:
         error += str('\n' + validity_check["parking_lot_num"])
-
+    print(table)
     if error is True:
         return jsonify({"error": error})
     else:
@@ -122,13 +122,14 @@ def vehicle_entry():
         #     return "Vehicle already exists in garage"
 
         new_car = {
-            "ticket_id": {'S':ticket_id},
-            "parking_lot": {'N':str(parking_lot_number)},
-            "plate_number": {'S':plate_number},
-            "entry_time": {'N':str(current_time)},
+            "ticket_id": {'S': ticket_id},
+            "parking_lot": {'N': str(parking_lot_number)},
+            "plate_number": {'S': plate_number},
+            "entry_time": {'N': str(current_time)},
         }
+
         res = table.put_item(Item=new_car)
-    return json.dumps(res, indent=2, default=decimal_default)
+        return json.dumps(res, indent=2, default=decimal_default)
 
 
 @app.route("/exit")
@@ -142,13 +143,15 @@ def vehicle_exit():
     exiting_vehicle = None
     try:
         exit_res = table.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
-        delete_res = table.delete_item(TableName=__TableName__, Key={"ticket_id":ticket_id})
+        delete_res = table.delete_item(TableName=__TableName__,
+                                       Key={"ticket_id": ticket_id})
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
         if 'Item' in exit_res.keys():
             exiting_vehicle = dict(exit_res['Item'])
-            parked_duration, amount_to_pay = get_payment_amount(exiting_vehicle["entry_time"])
+            parked_duration, amount_to_pay = get_payment_amount(
+                exiting_vehicle["entry_time"])
             exiting_vehicle.update({"total_parked_time": str(parked_duration)})
             exiting_vehicle.update({"charge": float(amount_to_pay)})
         else:
@@ -158,7 +161,6 @@ def vehicle_exit():
 
 @app.route("/")
 def home():
-
     return "Hello World!"
 
 
