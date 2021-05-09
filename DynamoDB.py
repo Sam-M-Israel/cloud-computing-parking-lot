@@ -57,9 +57,10 @@ class DynamoDB:
 
         return response['Policy']['Arn']
 
-    def c(self):
+    def create_table(self):
         dynamo_db = boto3.resource('dynamodb', region_name=self.region)
         with open('create-table.json') as fp:
             data = json.load(fp)
 
         return dynamo_db.create_table(data)
+
