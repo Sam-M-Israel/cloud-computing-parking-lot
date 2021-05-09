@@ -1,3 +1,4 @@
+#!/bin/sh
 sudo apt -f install
 sudo apt -y update && sudo apt -y dist-upgrade
 sudo apt install git

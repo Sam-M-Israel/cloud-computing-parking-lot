@@ -4,6 +4,8 @@ import appscript
 import platform
 import boto3
 import time
+import requests
+import subprocess
 
 from botocore.exceptions import ClientError
 
@@ -26,9 +28,9 @@ def create_key_pair(instance_name='ec2'):
     # capture the key and store it in a file
     key_pair_out = str(key_pair.key_material)
     outfile.write(key_pair_out)
-
+    outfile.close()
     # Securing the key pair
-    os.chmod(f'{key_pem}', 400)
+    subprocess.call(['chmod', '400', key_pem])
     print(f'Key pair created and secured')
     return key_name
 
@@ -36,18 +38,17 @@ def create_key_pair(instance_name='ec2'):
 def create_security_group():
     security_group_name = f'my-sg-parking-lot-task-{run_id}'
     print(f'Setting up firewall for {security_group_name}')
-    response = ec2.describe_vpcs()
+    response = ec2_client.describe_vpcs()
     vpc_id = response.get('Vpcs', [{}])[0].get('VpcId', '')
     try:
-        response = ec2.create_security_group(GroupName=f'{security_group_name}',
-                                             Description='Access to my instances',
-                                             VpcId=vpc_id)
+        response = ec2_client.create_security_group(GroupName=f'{security_group_name}',
+                                             Description='Access to my instances', VpcId=vpc_id)
         security_group_id = response['GroupId']
         print('Security Group Created %s in vpc %s.' % (security_group_id, vpc_id))
-        hostname = socket.gethostname()
-        my_ip = socket.gethostbyname(hostname)
+        r = requests.get(r'http://jsonip.com')
+        my_ip = r.json()['ip']
         print(f'My IP: {my_ip}')
-        data = ec2.authorize_security_group_ingress(
+        data = ec2_client.authorize_security_group_ingress(
             GroupId=security_group_id,
             IpPermissions=[
                 {'IpProtocol': 'tcp',
@@ -57,31 +58,30 @@ def create_security_group():
                 {'IpProtocol': 'tcp',
                  'FromPort': 22,
                  'ToPort': 22,
-                 'IpRanges': [{'CidrIp': '0.0.0.0/0'}]}
+                 'IpRanges': [{'CidrIp': f'{my_ip}/32'}]}
             ])
         print('Ingress Successfully Set %s' % data)
-        return data
+        return security_group_id
     except ClientError as e:
         print(e)
 
 
-def create_ec2_instance(key_pair_name):
+def create_ec2_instance(key_pair_name,security_group_id):
     print('Creating a new ec2 instance')
     # create a new EC2 instance
-    script_file = open("launch_script.txt").read()
+    script_file = open("launch_script.sh").read()
     instances = ec2.create_instances(
         ImageId='ami-08962a4068733a2b6',
         MinCount=1,
-        MaxCount=2,
+        MaxCount=1,
         InstanceType='t2.micro',
         KeyName=key_pair_name,
-        Name=key_pair_name,
-        userData=script_file
+        UserData=script_file,
+        SecurityGroupIds=[security_group_id]
     )
 
     print('Getting instance with out key pair')
-    response = ec2_client.describe_instances(
-        Filters=[{'Name': 'key-name', 'Values': [key_pair_name]}])
+    response = ec2_client.describe_instances(Filters=[{'Name': 'key-name', 'Values': [key_pair_name]}])
     reservations = response['Reservations']
     instances = reservations[0]['Instances']
 
@@ -90,14 +90,13 @@ def create_ec2_instance(key_pair_name):
         return False
     else:
         instance = instances[0]
-        while instances[0].state != 'running':
-            print(f'...instance is in {instance.state} state')
+        while instance['State']['Name'] != 'running':
+            print(f'...instance is in {instance["State"]} state')
             time.sleep(10)
             response = ec2_client.describe_instances(
                 Filters=[{'Name': 'key-name', 'Values': [key_pair_name]}])
             reservations = response['Reservations']
             instances = reservations[0]['Instances']
-            instances = list(instances)
             instance = instances[0]
 
         print(f'Public IP address is: {instance["PublicIpAddress"]}')
@@ -127,26 +126,35 @@ def connect_to_ec2_and_deploy(ec2_instance, key_pair, public_ip):
     #                'FLASK_DEBUG=0\nnohup flask run --host 0.0.0.0  &>/dev/null ' \
     #                '&\nexit\nEOF'
 
-    bash_command = f'ssh -i "{key_pair}.pem" ' \
-                   f'ubuntu@{public_ip}.us-east-2.compute.amazonaws.com'
+    # public_ip = f'ec2-{public_ip.replace(".", "-")}'
+    # bash_command = f'ssh -i "{key_pair}.pem" ' \
+    #                f'ubuntu@{public_ip}.us-east-2.compute.amazonaws.com'
+
+    file_upload_command = f'scp -i "{key_pair}.pem" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=60" launch_script.sh ubuntu@{public_ip}:/home/ubuntu/'
+    bash_command = f'ssh -i "{key_pair}.pem" -o "StrictHostKeyChecking=no" -o ' \
+                   f'"ConnectionAttempts=10" ubuntu@{public_ip}'
+
     working_directory = os.path.abspath(os.getcwd())
     if current_platform == 'Windows':
         os.system(
-            f"start /B start cmd.exe @cmd /k cd {working_directory} && {bash_command}")
+            f"start /B start cmd.exe @cmd /k cd {working_directory} && {file_upload_command} && {bash_command}")
     elif current_platform == 'Darwin':
-        appscript.app('Terminal').do_script(f'cd {working_directory} && {bash_command}')
+        appscript.app('Terminal').do_script(f'cd {working_directory} && {file_upload_command} && {bash_command}')
     else:
-        os.system(f'gnome-terminal -- cd {working_directory} && {bash_command}')
+        os.system(f'gnome-terminal -- cd {working_directory} && {file_upload_command} && {bash_command}')
+
+
 
 
 def deploy():
     key_pair_name = create_key_pair('parking-lot-task')
-    scg = create_security_group()
-    ec2_machine = create_ec2_instance(key_pair_name)
+    security_group_id = create_security_group()
+    ec2_machine = create_ec2_instance(key_pair_name, security_group_id)
     public_ip = ec2_machine["PublicIpAddress"]
     connect_to_ec2_and_deploy(ec2_machine, key_pair_name, public_ip)
+    print('Sammy')
 
 
 if __name__ == '__main__':
     deploy()
-    print('Sammy')
+
