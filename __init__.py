@@ -124,7 +124,7 @@ def connect_to_ec2_and_deploy(key_pair, public_ip):
         os.system(
             f"start /B start cmd.exe @cmd /k cd {working_directory} && {file_upload_command} && {bash_command}")
     elif current_platform == 'Darwin':
-        # appscript.app('Terminal').do_script(f'cd {working_directory} && {file_upload_command} && {bash_command}')
+        print("Fuck")
     else:
         os.system(
             f'gnome-terminal -- cd {working_directory} && {file_upload_command} && {bash_command}')
@@ -142,8 +142,7 @@ def send_deploy_code():
         os.system(
             f"start /B start cmd.exe @cmd /k cd {working_directory} && {script}")
     elif current_platform == 'Darwin':
-        # appscript.app('Terminal').do_script(
-        #     f'cd {working_directory} && {script}')
+        print("Fuck")
     else:
         os.system(
             f'gnome-terminal -- cd {working_directory} && {script}')

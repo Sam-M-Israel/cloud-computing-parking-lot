@@ -4,10 +4,9 @@ from botocore.exceptions import ClientError
 from flask import Flask, request, jsonify, abort
 import boto3
 import time
-import ParkingLotCreateTable
 import decimal
 import math
-import InitDynamoDB
+from init_dynamoDB import DynamoDB as dyno
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
@@ -22,7 +21,7 @@ __TableName__ = "CloudCompParkingLotTask"
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
 
-dynamoInstance = InitDynamoDB.InitDynamoDB()
+dynamoInstance = dyno()
 table = dynamoInstance.table
 # session = boto3.Session(profile_name='default')
 # credentials = session.get_credentials()
