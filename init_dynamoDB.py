@@ -80,11 +80,14 @@ class DynamoDB:
                     'ReadCapacityUnits': 5,
                     'WriteCapacityUnits': 5
                 })
+            print("1. Got to here in create dyno table")
+            table.meta.client.get_waiter('table_exists').wait(TableName=table_name,WaiterConfig={'Delay': 1,'MaxAttempts': 30})
             self.table = table
             return table
         else:
             try:
-                response = self.dynamo_client.describe_table(TableName='test')
+                print("2. Got to here in create dyno table")
+                response = self.dynamo_client.describe_table(TableName=table_name)
                 return response
             except self.dynamo_client.exceptions.ResourceNotFoundException:
                 # do something here as you require

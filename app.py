@@ -8,10 +8,10 @@ import decimal
 import math
 from .init_dynamoDB import DynamoDB as dyno
 
+
+app = Flask(__name__)
 dynamoInstance = dyno()
 table = dynamoInstance.create_dyno_table()
-app = Flask(__name__)
-
 __TableName__ = "CloudCompParkingLotTask"
 
 Primary_Column_Name = "ticket_id"
@@ -33,6 +33,7 @@ def decimal_default(obj):
 
 
 def get_car_by_ticket_id(ticket_id):
+
     res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
     if 'Item' not in res:
         return {"nonexist": "car doesn't exist in db"}
