@@ -122,10 +122,10 @@ def vehicle_entry():
         #     return "Vehicle already exists in garage"
 
         new_car = {
-            "ticket_id": ticket_id,
-            "parking_lot": parking_lot_number,
-            "plate_number": plate_number,
-            "entry_time": current_time,
+            "ticket_id": {'S':ticket_id},
+            "parking_lot": {'N':parking_lot_number},
+            "plate_number": {'S':plate_number},
+            "entry_time": {'N':current_time},
         }
         res = table.put_item(Item=new_car)
     return json.dumps(res, indent=2, default=decimal_default)
