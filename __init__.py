@@ -1,6 +1,4 @@
 import os
-import socket
-import appscript
 import platform
 import boto3
 import time
@@ -42,7 +40,8 @@ def create_security_group():
     vpc_id = response.get('Vpcs', [{}])[0].get('VpcId', '')
     try:
         response = ec2_client.create_security_group(GroupName=f'{security_group_name}',
-                                             Description='Access to my instances', VpcId=vpc_id)
+                                                    Description='Access to my instances',
+                                                    VpcId=vpc_id)
         security_group_id = response['GroupId']
         print('Security Group Created %s in vpc %s.' % (security_group_id, vpc_id))
         r = requests.get(r'http://jsonip.com')
@@ -66,22 +65,31 @@ def create_security_group():
         print(e)
 
 
-def create_ec2_instance(key_pair_name,security_group_id):
+def create_ec2_instance(key_pair_name, security_group_id):
+    """
+    Creates a new ec2 instance
+
+    :param key_pair_name:
+    :param security_group_id:
+    :return:
+    """
     print('Creating a new ec2 instance')
     # create a new EC2 instance
-    script_file = open("launch_script.sh").read()
+
     instances = ec2.create_instances(
         ImageId='ami-08962a4068733a2b6',
         MinCount=1,
         MaxCount=1,
         InstanceType='t2.micro',
         KeyName=key_pair_name,
-        UserData=script_file,
+        UserData='file://launch_script.sh', # this should make this script run on
+        # instancec launch
         SecurityGroupIds=[security_group_id]
     )
 
-    print('Getting instance with out key pair')
-    response = ec2_client.describe_instances(Filters=[{'Name': 'key-name', 'Values': [key_pair_name]}])
+    print('Getting instance with our key pair')
+    response = ec2_client.describe_instances(
+        Filters=[{'Name': 'key-name', 'Values': [key_pair_name]}])
     reservations = response['Reservations']
     instances = reservations[0]['Instances']
 
@@ -104,31 +112,8 @@ def create_ec2_instance(key_pair_name,security_group_id):
         return instance
 
 
-def connect_to_ec2_and_deploy(ec2_instance, key_pair, public_ip):
+def connect_to_ec2_and_deploy(key_pair, public_ip):
     current_platform = platform.system()
-    result = {
-        'Linux': 'gnome-terminal',
-        'Darwin': 'Terminal.app',
-        'Windows': 'cmd.exe'
-    }
-    command_line = result[current_platform]
-
-    # bash_command = f'ssh -i {key_pair} -o \"StrictHostKeyChecking=no\" -o ' \
-    #                f'\"ConnectionAttempts=10\" ubuntu@{public_ip} <<EOF sudo apt -f ' \
-    #                'install\nsudo apt -y update && sudo apt -y dist-upgrade sudo apt ' \
-    #                'install git\nsudo apt -y install python3-pip\nsudo apt install ' \
-    #                'build-essential libssl-dev libffi-dev python3-dev\nsudo apt ' \
-    #                'install -y python3-venv\ngit clone ' \
-    #                'https://github.com/Sam-M-Israel/cloud-computing-parking-lot.git' \
-    #                '\ncd cloud-computing-parking-lot\npip3 install -r ' \
-    #                'requirements.txt && pip3 freeze > requirements.txt\nexport ' \
-    #                'FLASK_APP=app.py && export FLASK_ENV=development && export ' \
-    #                'FLASK_DEBUG=0\nnohup flask run --host 0.0.0.0  &>/dev/null ' \
-    #                '&\nexit\nEOF'
-
-    # public_ip = f'ec2-{public_ip.replace(".", "-")}'
-    # bash_command = f'ssh -i "{key_pair}.pem" ' \
-    #                f'ubuntu@{public_ip}.us-east-2.compute.amazonaws.com'
 
     file_upload_command = f'scp -i "{key_pair}.pem" -o "StrictHostKeyChecking=no" -o "ConnectionAttempts=60" launch_script.sh ubuntu@{public_ip}:/home/ubuntu/'
     bash_command = f'ssh -i "{key_pair}.pem" -o "StrictHostKeyChecking=no" -o ' \
@@ -139,22 +124,40 @@ def connect_to_ec2_and_deploy(ec2_instance, key_pair, public_ip):
         os.system(
             f"start /B start cmd.exe @cmd /k cd {working_directory} && {file_upload_command} && {bash_command}")
     elif current_platform == 'Darwin':
-        appscript.app('Terminal').do_script(f'cd {working_directory} && {file_upload_command} && {bash_command}')
+        # appscript.app('Terminal').do_script(f'cd {working_directory} && {file_upload_command} && {bash_command}')
     else:
-        os.system(f'gnome-terminal -- cd {working_directory} && {file_upload_command} && {bash_command}')
+        os.system(
+            f'gnome-terminal -- cd {working_directory} && {file_upload_command} && {bash_command}')
 
 
+def send_deploy_code():
+    current_platform = platform.system()
+
+    script = f'aws ssm send-command \
+	--document-name "AWS-RunShellScript" \
+	--targets "Key=InstanceIds,Values=i-0f03bdcf67c0cb31b" \
+	--cli-input-json file://codeDeploy.json'
+    working_directory = os.path.abspath(os.getcwd())
+    if current_platform == 'Windows':
+        os.system(
+            f"start /B start cmd.exe @cmd /k cd {working_directory} && {script}")
+    elif current_platform == 'Darwin':
+        # appscript.app('Terminal').do_script(
+        #     f'cd {working_directory} && {script}')
+    else:
+        os.system(
+            f'gnome-terminal -- cd {working_directory} && {script}')
 
 
 def deploy():
+    # send_deploy_code()
     key_pair_name = create_key_pair('parking-lot-task')
     security_group_id = create_security_group()
     ec2_machine = create_ec2_instance(key_pair_name, security_group_id)
     public_ip = ec2_machine["PublicIpAddress"]
-    connect_to_ec2_and_deploy(ec2_machine, key_pair_name, public_ip)
+    connect_to_ec2_and_deploy(key_pair_name, public_ip)
     print('Sammy')
 
 
 if __name__ == '__main__':
     deploy()
-

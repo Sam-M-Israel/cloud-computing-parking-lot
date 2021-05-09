@@ -4,7 +4,7 @@ import json
 import pandas as pd
 
 
-class DynamoDB:
+class InitDynamoDB:
 
     def __init__(self):
         self.session = boto3.Session(profile_name='default')
