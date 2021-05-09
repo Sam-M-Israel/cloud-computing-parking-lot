@@ -127,7 +127,7 @@ def vehicle_entry():
             "plate_number": plate_number,
             "entry_time": current_time,
         }
-        res = table.put_item(TableName=__TableName__, Item=new_car)
+        res = table.put_item(Item=new_car)
 
         car = get_car_by_ticket_id(ticket_id)
     return json.dumps(car, indent=2, default=decimal_default)
