@@ -12,7 +12,7 @@ class DynamoDB:
         self.sts_client = self.create_client('sts')
         self.iam_client = self.create_client('iam')
         self.account_id = self.sts_client.get_caller_identity()["Account"]
-        self.table = self.create_dyno_table()
+        self.table = None
 
     def create_client(self, role_name='dynamodb'):
         return boto3.client(f'{role_name}', region_name=self.region,
@@ -80,6 +80,7 @@ class DynamoDB:
                     'ReadCapacityUnits': 5,
                     'WriteCapacityUnits': 5
                 })
+            self.table = table
             return table
         else:
             try:

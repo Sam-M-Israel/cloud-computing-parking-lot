@@ -6,10 +6,10 @@ import boto3
 import time
 import decimal
 import math
-from init_dynamoDB import DynamoDB as dyno
+from .init_dynamoDB import DynamoDB as dyno
 
 dynamoInstance = dyno()
-table = dynamoInstance.table
+table = dynamoInstance.create_dyno_table()
 app = Flask(__name__)
 
 __TableName__ = "CloudCompParkingLotTask"
@@ -100,6 +100,9 @@ def check_exit_query_params_validity(ticket_id):
 def vehicle_entry():
     plate_number = request.args.get('plate')
     parking_lot_number = request.args.get('parkingLot')
+    if not plate_number or not parking_lot_number:
+        return "Error, invalid params"
+
     validity_check = check_entry_query_params_validity(plate_number, parking_lot_number)
     error = False
     if validity_check["plate_num"] is not True:
