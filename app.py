@@ -17,7 +17,6 @@ __TableName__ = "CloudCompParkingLotTask"
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
 
-
 # session = boto3.Session(profile_name='default')
 # credentials = session.get_credentials()
 # AWS_ACCESS_KEY = credentials.access_key
