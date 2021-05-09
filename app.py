@@ -122,15 +122,13 @@ def vehicle_entry():
         #     return "Vehicle already exists in garage"
 
         new_car = {
-            Primary_Column_Name: ticket_id,
+            "ticket_id": ticket_id,
             "parking_lot": parking_lot_number,
             "plate_number": plate_number,
             "entry_time": current_time,
         }
-        res = table.put_item(TableName=__TableName__, Item=new_car)
-
-        car = get_car_by_ticket_id(ticket_id)
-    return json.dumps(car, indent=2, default=decimal_default)
+        res = table.put_item(Item=new_car)
+    return json.dumps(res, indent=2, default=decimal_default)
 
 
 @app.route("/exit")
