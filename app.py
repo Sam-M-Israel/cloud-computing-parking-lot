@@ -4,17 +4,12 @@ from botocore.exceptions import ClientError
 from flask import Flask, request, jsonify, abort
 import boto3
 import time
-import ParkingLotCreateTable
 import decimal
 import math
-import InitDynamoDB
+from init_dynamoDB import DynamoDB as dyno
 
-def decimal_default(obj):
-    if isinstance(obj, decimal.Decimal):
-        return int(obj)
-    raise TypeError
-
-
+dynamoInstance = dyno()
+table = dynamoInstance.table
 app = Flask(__name__)
 
 __TableName__ = "CloudCompParkingLotTask"
@@ -22,8 +17,7 @@ __TableName__ = "CloudCompParkingLotTask"
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
 
-dynamoInstance = InitDynamoDB.InitDynamoDB()
-table = dynamoInstance.table
+
 # session = boto3.Session(profile_name='default')
 # credentials = session.get_credentials()
 # AWS_ACCESS_KEY = credentials.access_key
@@ -33,6 +27,11 @@ table = dynamoInstance.table
 #                         aws_secret_access_key=credentials.secret_key)
 # table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
 #                                                         credentials)
+def decimal_default(obj):
+    if isinstance(obj, decimal.Decimal):
+        return int(obj)
+    raise TypeError
+
 
 def get_car_by_ticket_id(ticket_id):
     res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
