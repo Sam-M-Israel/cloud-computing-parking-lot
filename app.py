@@ -7,7 +7,7 @@ import time
 import ParkingLotCreateTable
 import decimal
 import math
-
+import InitDynamoDB
 
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
@@ -21,16 +21,18 @@ __TableName__ = "CloudCompParkingLotTask"
 
 Primary_Column_Name = "ticket_id"
 Default_Primary_Key = 1
-session = boto3.Session(profile_name='default')
-credentials = session.get_credentials()
-AWS_ACCESS_KEY = credentials.access_key
 
-dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
-                        aws_access_key_id=credentials.access_key,
-                        aws_secret_access_key=credentials.secret_key)
-table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
-                                                        credentials)
-
+dynamoInstance = InitDynamoDB.InitDynamoDB()
+table = dynamoInstance.table
+# session = boto3.Session(profile_name='default')
+# credentials = session.get_credentials()
+# AWS_ACCESS_KEY = credentials.access_key
+#
+# dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
+#                         aws_access_key_id=credentials.access_key,
+#                         aws_secret_access_key=credentials.secret_key)
+# table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
+#                                                         credentials)
 
 def get_car_by_ticket_id(ticket_id):
     res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
