@@ -123,9 +123,9 @@ def vehicle_entry():
 
         new_car = {
             "ticket_id": {'S':ticket_id},
-            "parking_lot": {'N':parking_lot_number},
+            "parking_lot": {'N':str(parking_lot_number)},
             "plate_number": {'S':plate_number},
-            "entry_time": {'N':current_time},
+            "entry_time": {'N':str(current_time)},
         }
         res = table.put_item(Item=new_car)
     return json.dumps(res, indent=2, default=decimal_default)

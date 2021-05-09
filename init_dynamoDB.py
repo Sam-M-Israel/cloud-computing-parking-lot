@@ -17,7 +17,8 @@ class DynamoDB:
     def create_client(self, role_name='dynamodb'):
         return boto3.client(f'{role_name}', region_name=self.region,
                             aws_access_key_id=self.credentials.access_key,
-                            aws_secret_access_key=self.credentials.secret_key)
+                            aws_secret_access_key=self.credentials.secret_key
+                            )
 
     def create_policy(self):
         policy_name = "Cloud-Comp-Parking-Lot-Task-Policy"
