@@ -30,7 +30,7 @@ def decimal_default(obj):
 
 
 def get_car_by_ticket_id(ticket_id):
-    res = client.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
+    res = client.get_item(TableName=__TableName__, Key={"ticket_id": {'S': ticket_id}})
     if 'Item' not in res:
         return error_messages('vehicle doesn\'t exist in garage', 'Please enter the '
                                                                   'proper ticket ID.')
@@ -161,7 +161,7 @@ def vehicle_entry():
 @app.route("/exit")
 def vehicle_exit():
     ticket_id = request.args.get('ticketId')
-    check_validity = check_exit_query_params_validity(ticket_id)
+    check_validity = check_exit_query_params_validity(str(ticket_id))
 
     if not check_validity["isValid"]:
         return jsonify({"error": check_validity["ticket_id"]})
@@ -169,9 +169,9 @@ def vehicle_exit():
     exiting_vehicle = None
     try:
         exit_res = client.get_item(TableName=__TableName__,
-                                   Key={"ticket_id": ticket_id})
+                                   Key={"ticket_id": {'S': str(ticket_id)}})
         delete_res = client.delete_item(TableName=__TableName__,
-                                        Key={"ticket_id": ticket_id})
+                                        Key={"ticket_id": {'S': str(ticket_id)}})
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
