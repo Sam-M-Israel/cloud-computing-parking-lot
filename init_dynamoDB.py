@@ -9,6 +9,7 @@ class DynamoDB:
         self.credentials = self.session.get_credentials()
         self.region = 'us-east-2'
         self.dynamo_client = self.create_client('dynamodb')
+        self.dynamo_resource = self.create_resource('dynamodb')
         self.sts_client = self.create_client('sts')
         self.iam_client = self.create_client('iam')
         self.account_id = self.sts_client.get_caller_identity()["Account"]
@@ -19,6 +20,12 @@ class DynamoDB:
                             aws_access_key_id=self.credentials.access_key,
                             aws_secret_access_key=self.credentials.secret_key
                             )
+
+    def create_resource(self, role_name='dynamodb'):
+        return boto3.resource(f'{role_name}', region_name=self.region,
+                              aws_access_key_id=self.credentials.access_key,
+                              aws_secret_access_key=self.credentials.secret_key
+                              )
 
     def create_policy(self):
         policy_name = "Cloud-Comp-Parking-Lot-Task-Policy"
@@ -52,7 +59,8 @@ class DynamoDB:
             ]
         }
 
-        response = self.iam_client.create_policy(PolicyName=policy_name, PolicyDocument=json.dumps(policy))
+        response = self.iam_client.create_policy(PolicyName=policy_name,
+                                                 PolicyDocument=json.dumps(policy))
 
         return response['Policy']['Arn']
 
@@ -81,13 +89,13 @@ class DynamoDB:
                     'ReadCapacityUnits': 5,
                     'WriteCapacityUnits': 5
                 })
-            print("1. Got to here in create dyno table")
-            table.meta.client.get_waiter('table_exists').wait(TableName=table_name,WaiterConfig={'Delay': 1,'MaxAttempts': 30})
+            table.meta.client.get_waiter('table_exists').wait(TableName=table_name,
+                                                              WaiterConfig={'Delay': 1,
+                                                                            'MaxAttempts': 30})
             self.table = table
             return table
         else:
             try:
-                print("2. Got to here in create dyno table")
                 response = self.dynamo_client.describe_table(TableName=table_name)
                 return response
             except self.dynamo_client.exceptions.ResourceNotFoundException:

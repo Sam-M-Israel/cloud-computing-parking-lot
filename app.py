@@ -1,5 +1,6 @@
 import datetime
 import simplejson as json
+from boto3.dynamodb.conditions import Key
 from botocore.exceptions import ClientError
 from flask import Flask, request, jsonify
 import time
@@ -8,11 +9,18 @@ import math
 from .init_dynamoDB import DynamoDB as dyno
 
 app = Flask(__name__)
-dynamoInstance = dyno()
-table = dynamoInstance.create_dyno_table()
-client = dynamoInstance.dynamo_client
+dyno_instance = dyno()
+table = dyno_instance.create_dyno_table()
+client = dyno_instance.dynamo_client
+resource = dyno_instance.dynamo_resource
 __TableName__ = "CloudCompParkingLotTask"
-Primary_Column_Name = "ticket_id"
+
+
+def error_messages(main_err, secondary_message=None):
+    message = f'Error: {main_err}.'
+    if secondary_message is not None:
+        message += f' {secondary_message}'
+    return {"error": message}
 
 
 def decimal_default(obj):
@@ -22,10 +30,25 @@ def decimal_default(obj):
 
 
 def get_car_by_ticket_id(ticket_id):
-    res = client.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
+    res = client.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
     if 'Item' not in res:
-        return {"nonexist": "car doesn't exist in db"}
+        return error_messages('vehicle doesn\'t exist in garage', 'Please enter the '
+                                                                  'proper ticket ID.')
 
+    return res['Item']
+
+
+def get_car_by_license_plate(license_plate):
+    """
+    TODO: Need to implement this. Change the table to also ALSO be able to sort by
+    the license plate number
+    :param license_plate:
+    :return:
+    """
+    res = resource.query(KeyConditionExpression=Key('plate').eq(license_plate))
+    if 'Item' not in res:
+        return error_messages('vehicle doesn\'t exist in garage',
+                              'Please enter the correct license plate number.')
     return res['Item']
 
 
@@ -33,9 +56,13 @@ def create_new_ticket_id(current_time, plate_number, parking_lot):
     return str(current_time) + str(parking_lot) + str(plate_number[-4:])
 
 
-# hourly rate for parking is $10 -> each 15 minute interval is $2.5 -> we are
-# charging for every 15 min interval that has been started
 def get_payment_amount(entry_time):
+    """
+    hourly rate for parking is $10 -> each 15 minute interval is $2.5 -> we are
+    charging for every 15 min interval that has been started
+    :param entry_time:
+    :return:
+    """
     current_time = int(round(time.time() * 1000))
     exit_time = datetime.datetime.fromtimestamp(current_time / 1e3)
     entry_time = datetime.datetime.fromtimestamp(float(entry_time) / 1e3)
@@ -90,7 +117,7 @@ def vehicle_entry():
     plate_number = request.args.get('plate')
     parking_lot_number = request.args.get('parkingLot')
     if not plate_number or not parking_lot_number:
-        return "Error, invalid params"
+        return "Error, missing param/s"
 
     validity_check = check_entry_query_params_validity(plate_number, parking_lot_number)
     error = False
@@ -104,10 +131,10 @@ def vehicle_entry():
     else:
         current_time = round(time.time() * 1000)
         ticket_id = create_new_ticket_id(current_time, plate_number, parking_lot_number)
-        # check_exists = get_car_by_ticket_id(ticket_id)
-        #
-        # if not check_exists["nonexist"]:
-        #     return "Vehicle already exists in garage"
+        check_exists = get_car_by_license_plate(plate_number)
+
+        if not check_exists["error"]:
+            return "Vehicle already exists in garage"
 
         new_car = {
             "ticket_id": {'S': ticket_id},
@@ -117,7 +144,16 @@ def vehicle_entry():
         }
 
         res = client.put_item(TableName=__TableName__, Item=new_car)
-        return json.dumps(res, indent=2, default=decimal_default)
+        newTable = resource.Table(__TableName__)
+        response = newTable.scan()
+        data = response['Items']
+        print("Printing the table")
+        print(data)
+        if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
+            entry_string = f'Garage is full'
+        else:
+            entry_string = f'Your ticket ID is: {ticket_id}'
+        return entry_string
 
 
 @app.route("/exit")
@@ -130,9 +166,10 @@ def vehicle_exit():
 
     exiting_vehicle = None
     try:
-        exit_res = client.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
+        exit_res = client.get_item(TableName=__TableName__,
+                                   Key={"ticket_id": ticket_id})
         delete_res = client.delete_item(TableName=__TableName__,
-                                       Key={"ticket_id": ticket_id})
+                                        Key={"ticket_id": ticket_id})
     except ClientError as e:
         print(e.response['Error']['Message'])
     else:
