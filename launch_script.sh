@@ -8,6 +8,5 @@ sudo apt install -y python3-venv
 git clone https://github.com/Sam-M-Israel/cloud-computing-parking-lot.git
 cd cloud-computing-parking-lot
 pip3 install -r requirements.txt && pip3 freeze > requirements.txt
-export FLASK_APP=app.py && export FLASK_ENV=development && export FLASK_DEBUG=0
-nohup flask run --host 0.0.0.0  &>/dev/null &
-exit
+export FLASK_APP=app.py && export FLASK_ENV=production && export FLASK_DEBUG=0
+nohup flask run --host 0.0.0.0 >/dev/null & exit

@@ -1,5 +1,5 @@
 {
-  "TableName": "CloudCompParkingLotTask",
+  "TableName": "Checking_1_2",
   "KeySchema": [
     {
       "AttributeName": "ticket_id",
