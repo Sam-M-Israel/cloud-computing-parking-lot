@@ -65,12 +65,12 @@ def get_payment_amount(entry_time):
     :param entry_time:
     :return:
     """
-    return entry_time
     current_time = int(round(time.time() * 1000))
     exit_time = datetime.datetime.fromtimestamp(current_time / 1e3)
     entry_time = datetime.datetime.fromtimestamp(float(entry_time) / 1e3)
     duration = exit_time - entry_time
     minutes_passed = divmod(duration.total_seconds(), 60)[0]
+    minutes_passed = 1 if minutes_passed == 0 else minutes_passed
     rounded_intervals = int(math.floor(minutes_passed / 15))
     num_charging_periods = rounded_intervals if minutes_passed % 15 == 0 else rounded_intervals + 1
     return duration, num_charging_periods * 2.5
@@ -134,10 +134,6 @@ def vehicle_entry():
     else:
         current_time = round(time.time() * 1000)
         ticket_id = create_new_ticket_id(current_time, plate_number, parking_lot_number)
-        # check_exists = get_car_by_license_plate(plate_number)
-        #
-        # if not check_exists["error"]:
-        #     return "Vehicle already exists in garage"
 
         new_car = {
             "ticket_id": {'S': ticket_id},
@@ -147,11 +143,6 @@ def vehicle_entry():
         }
 
         res = client.put_item(TableName=__TableName__, Item=new_car)
-        newTable = resource.Table(__TableName__)
-        response = newTable.scan()
-        data = response['Items']
-        print("Printing the table")
-        print(data)
         if res["ResponseMetadata"]["HTTPStatusCode"] != 200:
             entry_string = f'Garage is full'
         else:
@@ -167,7 +158,7 @@ def vehicle_exit():
     if not check_validity["isValid"]:
         return jsonify({"error": check_validity["ticket_id"]})
 
-    exiting_vehicle = None
+    exiting_vehicle = dict()
     try:
         exit_res = client.get_item(TableName=__TableName__,
                                    Key={"ticket_id": {'S': str(ticket_id)}})
@@ -177,12 +168,16 @@ def vehicle_exit():
         print(e.response['Error']['Message'])
     else:
         if 'Item' in exit_res.keys():
-            exiting_vehicle = dict(exit_res['Item'])
-            entry_key = list(exiting_vehicle["entry_time"])[0]
-            entry_time_val = exiting_vehicle["entry_time"].get(entry_key)
-            print(entry_time_val)
-            parked_duration, amount_to_pay = get_payment_amount(
-                entry_time_val)
+            temp = dict(exit_res['Item'])
+            entry_key = list(temp["entry_time"])[0]
+            entry_time_val = temp["entry_time"].get(entry_key)
+
+            for outer_key in temp:
+                tmp_val = temp.get(outer_key)
+                for inner_key in tmp_val:
+                    exiting_vehicle.update({outer_key: str(tmp_val.get(inner_key))})
+            print(exiting_vehicle)
+            parked_duration, amount_to_pay = get_payment_amount(entry_time_val)
             exiting_vehicle.update({"total_parked_time": str(parked_duration)})
             exiting_vehicle.update({"charge": float(amount_to_pay)})
         else:
