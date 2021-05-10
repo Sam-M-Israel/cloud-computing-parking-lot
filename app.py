@@ -11,6 +11,7 @@ from .init_dynamoDB import DynamoDB as dyno
 app = Flask(__name__)
 dynamoInstance = dyno()
 table = dynamoInstance.create_dyno_table()
+client = dynamoInstance.dynamo_client
 __TableName__ = "CloudCompParkingLotTask"
 
 Primary_Column_Name = "ticket_id"
@@ -22,7 +23,8 @@ Default_Primary_Key = 1
 # AWS_ACCESS_KEY = credentials.access_key
 #
 # dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
-#                         aws_access_key_id=credentials.access_key,
+#                         aws_access_key_id=credentials.131
+#                         ,
 #                         aws_secret_access_key=credentials.secret_key)
 # table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
 #                                                         credentials)
@@ -128,7 +130,7 @@ def vehicle_entry():
             "entry_time": {'N': str(current_time)},
         }
 
-        res = table.put_item(Item=new_car)
+        res = client.put_item(TableName=__TableName__, Item=new_car)
         return json.dumps(res, indent=2, default=decimal_default)
 
 
