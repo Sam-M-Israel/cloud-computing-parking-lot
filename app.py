@@ -45,7 +45,9 @@ def get_car_by_license_plate(license_plate):
     :param license_plate:
     :return:
     """
-    res = client.query(TableName=__TableName__,KeyConditionExpression=Key('plate').eq(license_plate))
+    res = client.query(TableName=__TableName__,KeyConditionExpression='Key('
+                                                                      '\'plate\').eq('
+                                                                      'license_plate)')
     if 'Item' not in res:
         return error_messages('vehicle doesn\'t exist in garage',
                               'Please enter the correct license plate number.')
@@ -131,10 +133,10 @@ def vehicle_entry():
     else:
         current_time = round(time.time() * 1000)
         ticket_id = create_new_ticket_id(current_time, plate_number, parking_lot_number)
-        check_exists = get_car_by_license_plate(plate_number)
-
-        if not check_exists["error"]:
-            return "Vehicle already exists in garage"
+        # check_exists = get_car_by_license_plate(plate_number)
+        #
+        # if not check_exists["error"]:
+        #     return "Vehicle already exists in garage"
 
         new_car = {
             "ticket_id": {'S': ticket_id},
