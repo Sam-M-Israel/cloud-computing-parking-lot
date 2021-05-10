@@ -45,7 +45,7 @@ def get_car_by_license_plate(license_plate):
     :param license_plate:
     :return:
     """
-    res = resource.query(KeyConditionExpression=Key('plate').eq(license_plate))
+    res = client.query(TableName=__TableName__,KeyConditionExpression=Key('plate').eq(license_plate))
     if 'Item' not in res:
         return error_messages('vehicle doesn\'t exist in garage',
                               'Please enter the correct license plate number.')
