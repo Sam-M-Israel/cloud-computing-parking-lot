@@ -65,6 +65,7 @@ def get_payment_amount(entry_time):
     :param entry_time:
     :return:
     """
+    return entry_time
     current_time = int(round(time.time() * 1000))
     exit_time = datetime.datetime.fromtimestamp(current_time / 1e3)
     entry_time = datetime.datetime.fromtimestamp(float(entry_time) / 1e3)
@@ -177,6 +178,9 @@ def vehicle_exit():
     else:
         if 'Item' in exit_res.keys():
             exiting_vehicle = dict(exit_res['Item'])
+            entry_List = list(exiting_vehicle["entry_time"])
+            print(entry_List)
+            print(type(exiting_vehicle["entry_time"]))
             parked_duration, amount_to_pay = get_payment_amount(
                 exiting_vehicle["entry_time"])
             exiting_vehicle.update({"total_parked_time": str(parked_duration)})
