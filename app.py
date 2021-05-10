@@ -1,8 +1,7 @@
 import datetime
 import simplejson as json
 from botocore.exceptions import ClientError
-from flask import Flask, request, jsonify, abort
-import boto3
+from flask import Flask, request, jsonify
 import time
 import decimal
 import math
@@ -13,21 +12,9 @@ dynamoInstance = dyno()
 table = dynamoInstance.create_dyno_table()
 client = dynamoInstance.dynamo_client
 __TableName__ = "CloudCompParkingLotTask"
-
 Primary_Column_Name = "ticket_id"
-Default_Primary_Key = 1
 
 
-# session = boto3.Session(profile_name='default')
-# credentials = session.get_credentials()
-# AWS_ACCESS_KEY = credentials.access_key
-#
-# dynamoDB = boto3.client('dynamodb', region_name='us-east-2',
-#                         aws_access_key_id=credentials.131
-#                         ,
-#                         aws_secret_access_key=credentials.secret_key)
-# table = ParkingLotCreateTable.create_parking_lots_table(dynamoDB, __TableName__,
-#                                                         credentials)
 def decimal_default(obj):
     if isinstance(obj, decimal.Decimal):
         return int(obj)
@@ -35,7 +22,7 @@ def decimal_default(obj):
 
 
 def get_car_by_ticket_id(ticket_id):
-    res = table.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
+    res = client.get_item(TableName=__TableName__, Key={Primary_Column_Name: ticket_id})
     if 'Item' not in res:
         return {"nonexist": "car doesn't exist in db"}
 
@@ -112,7 +99,6 @@ def vehicle_entry():
 
     if validity_check["parking_lot_num"] is not True:
         error += str('\n' + validity_check["parking_lot_num"])
-    print(table)
     if error is True:
         return jsonify({"error": error})
     else:
@@ -144,8 +130,8 @@ def vehicle_exit():
 
     exiting_vehicle = None
     try:
-        exit_res = table.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
-        delete_res = table.delete_item(TableName=__TableName__,
+        exit_res = client.get_item(TableName=__TableName__, Key={"ticket_id": ticket_id})
+        delete_res = client.delete_item(TableName=__TableName__,
                                        Key={"ticket_id": ticket_id})
     except ClientError as e:
         print(e.response['Error']['Message'])
