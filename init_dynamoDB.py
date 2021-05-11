@@ -66,7 +66,7 @@ class DynamoDB:
 
     def create_dyno_table(self):
 
-        table_name = "CloudCompParkingLotTask"
+        table_name = "CloudParkingLotSamOmerTamir"
         existing_tables = self.dynamo_client.list_tables()['TableNames']
 
         if table_name not in existing_tables:

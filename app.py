@@ -13,7 +13,7 @@ dyno_instance = dyno()
 table = dyno_instance.create_dyno_table()
 client = dyno_instance.dynamo_client
 resource = dyno_instance.dynamo_resource
-__TableName__ = "CloudCompParkingLotTask"
+__TableName__ = "CloudParkingLotSamOmerTamir"
 
 
 def error_messages(main_err, secondary_message=None):

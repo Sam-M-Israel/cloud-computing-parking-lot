@@ -1,5 +1,5 @@
 {
-  "TableName": "Checking_1_2",
+  "TableName": "CloudParkingLotSamOmerTamir",
   "KeySchema": [
     {
       "AttributeName": "ticket_id",
