@@ -1,9 +1,11 @@
 #!/bin/sh
 sudo apt -f install
 sudo apt -y update && sudo apt -y dist-upgrade
+sudo apt install awscli zip
+aws configure
 sudo apt install git
 sudo apt -y install python3-pip
-sudo apt install build-essential libssl-dev libffi-dev python3-dev
+sudo apt -y install build-essential libssl-dev libffi-dev python3-dev
 sudo apt install -y python3-venv
 git clone https://github.com/Sam-M-Israel/cloud-computing-parking-lot.git
 cd cloud-computing-parking-lot

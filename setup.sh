@@ -69,8 +69,6 @@ INSTANCE_ID=$(echo $RUN_INSTANCES | jq -r '.Instances[0].InstanceId')
 echo "Waiting for instance creation..."
 aws ec2 wait instance-running --instance-ids $INSTANCE_ID
 
-aws ec2 associate-iam-instance-profile --instance-id $INSTANCE_ID --iam-instance-profile Name=$ARN_ROLE
-
 PUBLIC_IP=$(aws ec2 describe-instances  --instance-ids $INSTANCE_ID |
     jq -r '.Reservations[0].Instances[0].PublicIpAddress'
 )
