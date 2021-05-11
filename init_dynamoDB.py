@@ -14,6 +14,7 @@ class DynamoDB:
         self.iam_client = self.create_client('iam')
         self.account_id = self.sts_client.get_caller_identity()["Account"]
         self.table = None
+        self.table_name = "CloudParkingLotSamOmerTamir"
 
     def create_client(self, role_name='dynamodb'):
         return boto3.client(f'{role_name}', region_name=self.region,
@@ -66,13 +67,12 @@ class DynamoDB:
 
     def create_dyno_table(self):
 
-        table_name = "CloudParkingLotSamOmerTamir"
         existing_tables = self.dynamo_client.list_tables()['TableNames']
 
-        if table_name not in existing_tables:
+        if self.table_name not in existing_tables:
             dynamo_db = boto3.client('dynamodb', region_name=self.region)
             table = dynamo_db.create_table(
-                TableName=table_name,
+                TableName=self.table_name,
                 KeySchema=[
                     {
                         'AttributeName': 'ticket_id',
@@ -89,14 +89,14 @@ class DynamoDB:
                     'ReadCapacityUnits': 5,
                     'WriteCapacityUnits': 5
                 })
-            table.meta.client.get_waiter('table_exists').wait(TableName=table_name,
+            table.meta.client.get_waiter('table_exists').wait(TableName=self.table_name,
                                                               WaiterConfig={'Delay': 1,
                                                                             'MaxAttempts': 30})
             self.table = table
             return table
         else:
             try:
-                response = self.dynamo_client.describe_table(TableName=table_name)
+                response = self.dynamo_client.describe_table(TableName=self.table_name)
                 return response
             except self.dynamo_client.exceptions.ResourceNotFoundException:
                 # do something here as you require
