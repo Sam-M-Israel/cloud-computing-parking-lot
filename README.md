@@ -2,7 +2,7 @@
 
 Cloud computing task for IDC CS Elective 3031
 
-___Task::___
+___Task:___
 - Build a parking lot app which can be automatically deployed to either AWS lambda or EC2 - this is the EC2
 - The app should be able to handle 2 entry points:
     1. /entry?plate=XXX-XXX-XXXX&parkingLot=XXX    and returns ticket id
